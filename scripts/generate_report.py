@@ -406,8 +406,8 @@ def generate_html(analysis: dict) -> str:
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Suicide Survivor · 自殺喪親文獻日報 · {{date_display}}</title>
-<meta name="description" content="{{date_display}} 自殺喪親 (Suicide Bereavement) 文獻日報，由 AI 自動彙整 PubMed 最新論文"/>
+<title>Suicide Survivor · 自殺喪親文獻日報 · {date_display}</title>
+<meta name="description" content="{date_display} 自殺喪親 (Suicide Bereavement) 文獻日報，由 AI 自動彙整 PubMed 最新論文"/>
 <style>
   :root {{ --bg: #0f0f1a; --surface: #1a1a2e; --surface-2: #16213e; --line: #2a2a4a; --text: #e8e8f0; --muted: #8888aa; --accent: #6c63ff; --accent-soft: rgba(108,99,255,0.15); --accent-glow: rgba(108,99,255,0.3); --success: #4ecdc4; --warning: #ffe66d; --danger: #ff6b6b; --card-bg: rgba(26,26,46,0.92); }}
   *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
