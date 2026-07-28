@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Generate Suicide Bereavement daily report HTML using Zhipu AI.
-Reads papers JSON, analyzes with AI (GLM-5-Turbo with fallback chain), generates styled HTML.
+Generate Suicide Bereavement daily report HTML using NVIDIA AI.
+Reads papers JSON, analyzes with NVIDIA models using a fallback chain, generates styled HTML.
 """
 
 import json
@@ -15,12 +15,12 @@ from datetime import datetime, timezone, timedelta
 import httpx
 
 API_BASE = os.environ.get(
-    "ZHIPU_API_BASE", "https://open.bigmodel.cn/api/coding/paas/v4"
+    "NVIDIA_API_BASE", "https://integrate.api.nvidia.com/v1"
 )
-MODEL_PRIMARY = "GLM-5-Turbo"
-MODEL_FALLBACKS = ["GLM-4.7", "GLM-4.7-Flash"]
+MODEL_PRIMARY = "nvidia/nemotron-3-super-120b-a12b"
+MODEL_FALLBACKS = ["nvidia/nemotron-3-nano-30b-a3b"]
 ALL_MODELS = [MODEL_PRIMARY] + MODEL_FALLBACKS
-MAX_TOKENS = 100000
+MAX_TOKENS = 16384
 REQUEST_TIMEOUT = 660
 MAX_RETRIES = 3
 
@@ -228,9 +228,11 @@ def analyze_papers(api_key: str, papers_data: dict) -> dict | None:
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
                     ],
-                    "temperature": 0.3,
-                    "top_p": 0.9,
-                    "max_tokens": MAX_TOKENS,
+                "temperature": 1.0,
+                "top_p": 0.95,
+                "stream": False,
+                "chat_template_kwargs": {"enable_thinking": False},
+                "max_tokens": MAX_TOKENS,
                 }
                 resp = httpx.post(
                     f"{API_BASE}/chat/completions",
@@ -487,7 +489,7 @@ def generate_html(analysis: dict) -> str:
       <div class="header-meta">
         <span class="badge badge-date">📅 {date_display}</span>
         <span class="badge badge-count">📊 {total_count} 篇文獻</span>
-        <span class="badge badge-source">Powered by PubMed + Zhipu AI</span>
+        <span class="badge badge-source">Powered by PubMed + NVIDIA AI</span>
       </div>
     </div>
   </header>
@@ -545,14 +547,14 @@ def main():
     parser.add_argument("--output", required=True, help="Output HTML file")
     parser.add_argument(
         "--api-key",
-        default=os.environ.get("ZHIPU_API_KEY", ""),
-        help="Zhipu API key",
+        default=os.environ.get("NVIDIA_API_KEY", ""),
+        help="NVIDIA API key",
     )
     args = parser.parse_args()
 
     if not args.api_key:
         print(
-            "[ERROR] No API key provided. Set ZHIPU_API_KEY env var or use --api-key",
+            "[ERROR] No API key provided. Set NVIDIA_API_KEY env var or use --api-key",
             file=sys.stderr,
         )
         sys.exit(1)
