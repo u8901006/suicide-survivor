@@ -14,7 +14,8 @@ import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from urllib.request import urlopen, Request
-from urllib.error import URLError
+from urllib.error import HTTPError
+from time import sleep
 from urllib.parse import quote_plus
 
 PUBMED_SEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -110,6 +111,19 @@ def build_journal_queries(days: int = 7) -> list[str]:
     return queries
 
 
+def open_pubmed(request: Request, timeout: int):
+    for attempt in range(4):
+        sleep(0.4)
+        try:
+            return urlopen(request, timeout=timeout)
+        except HTTPError as error:
+            if error.code not in {429, 500, 502, 503, 504} or attempt == 3:
+                raise
+            retry_after = error.headers.get("Retry-After", "")
+            delay = int(retry_after) if retry_after.isdecimal() else 2 ** attempt
+            sleep(min(60, max(delay, 2 ** attempt)))
+
+
 def search_papers(query: str, retmax: int = 50) -> list[str]:
     params = (
         f"?db=pubmed&term={quote_plus(query)}&retmax={retmax}&sort=date&retmode=json"
@@ -117,12 +131,12 @@ def search_papers(query: str, retmax: int = 50) -> list[str]:
     url = PUBMED_SEARCH + params
     try:
         req = Request(url, headers=HEADERS)
-        with urlopen(req, timeout=30) as resp:
+        with open_pubmed(req, timeout=30) as resp:
             data = json.loads(resp.read().decode())
         return data.get("esearchresult", {}).get("idlist", [])
     except Exception as e:
         print(f"[ERROR] PubMed search failed: {e}", file=sys.stderr)
-        return []
+        raise
 
 
 def fetch_details(pmids: list[str]) -> list[dict]:
@@ -133,11 +147,11 @@ def fetch_details(pmids: list[str]) -> list[dict]:
     url = PUBMED_FETCH + params
     try:
         req = Request(url, headers=HEADERS)
-        with urlopen(req, timeout=60) as resp:
+        with open_pubmed(req, timeout=60) as resp:
             xml_data = resp.read().decode()
     except Exception as e:
         print(f"[ERROR] PubMed fetch failed: {e}", file=sys.stderr)
-        return []
+        raise
 
     papers = []
     try:
