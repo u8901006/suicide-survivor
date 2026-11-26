@@ -61,7 +61,6 @@ jobs:
             --max-papers 100 \
             --json \
             --output papers.json
-        continue-on-error: true
 
       - name: Check papers data
         id: papers
